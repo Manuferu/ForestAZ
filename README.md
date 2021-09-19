@@ -11,3 +11,5 @@ ForestAZ, ForestAz - Using Google Earth Engine and Copernicus Sentinel data for 
  - Perimetroforestal_SM : This shapefile contains the forest boundaries of the island.
 
  - SM_Admin0 : This shapefile contains the administrative boundary level 0 of Sao Miguel island.
+
+ - tra_val_edominante_dissolve: This shapefile contains the training and validating points per specie that is used to train both the Random Forest and CART classifier in the application
