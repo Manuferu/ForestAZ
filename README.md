@@ -8,4 +8,6 @@ ForestAZ, ForestAz - Using Google Earth Engine and Copernicus Sentinel data for 
 #### Shapefiles:
  In this folder you will find all shapefiles used in the ForestAZ.js.
  the list of shapefiles are:
- - Perimetroforestal_SM : this shapefile contains the forest boundaries of the island.
+ - Perimetroforestal_SM : This shapefile contains the forest boundaries of the island.
+
+ - SM_Admin0 : This shapefile contains the administrative boundary level 0 of Sao Miguel island.
