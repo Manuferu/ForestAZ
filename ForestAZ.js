@@ -1,19 +1,18 @@
 // Import of files needed
-// Please substitute your_path with your on directory path
-var SM = ee.FeatureCollection("your_path/SM_Admin0"),
-    ter = ee.FeatureCollection("your_path/Terceira_admin_0"),
-    table3 = ee.FeatureCollection("your_path/Tra_val_terceira_points"),
-    table4 = ee.FeatureCollection("your_path/tra_val_edominante_dissolve"),
-    geometry = /* color: #d63000 */ee.Geometry.MultiPoint(),
-    forest = ee.FeatureCollection("your_path/Perimetroforestal_SM");
+// Please substitute your_path with your on directory path //////
+///////////////////////////////////////////////////////////////////
+var SM = ee.FeatureCollection("users/Manuferu/SM_Admin0"),
+    table4 = ee.FeatureCollection("users/Manuferu/tra_val_edominante_dissolve"),
+    forest = ee.FeatureCollection("users/Manuferu/Perimetroforestal_SM");
 
 
 //////ForestAZ project
 //
+
 // A UI to interactively filter a collection, select an individual image
 // from the results, display it with a variety of visualizations, and export it.
-//print(table4);
-// The namespace for our application.  All the state is kept in here.
+
+// The namespace for our application.  
 var app = {};
 
 app.createPanels = function() {
@@ -21,10 +20,9 @@ app.createPanels = function() {
   app.intro = {
     legend: ui.Panel({style: {position: "top-left", padding: "8px 15px"}}),
     panel: ui.Panel([
-      ui.Label({value: 'Sentinel Based Azores Regional Forest', style: {fontWeight: "bold", fontSize: "18px", margin: "0 0 4px 0", padding: "0"}}),
-      ui.Label('Welcome to the Azorean forest inventory. The application aims to be an up to date forest classification' +
-      'Thanks to Google Earth Engine, we combine big data and artificial intelligence techniques with remote sesning and GIS technologies'+
-      'in order to provide information about LULC change'),
+      ui.Label({value: 'ForestAz app', style: {fontWeight: "bold", fontSize: "18px", margin: "0 0 4px 0", padding: "0"}}),
+      ui.Label('Welcome to the Azorean forest inventory. The application aims to give the tools for an efficent forest monitoring' +
+      ' in Sao Miguel island'),
       ui.Label({value: "See the chapter  published in book: The Ever Growing use of Copernicus across Europe’s Regions: a selection of 99 user stories by local and regional authorities, Publisher: NEREUS / European Space Agency / European Commission, pp.102-103", style: {fontWeight: "normal", fontSize: "12px", maxWidth: "500px", margin: "0 0 4px 0", padding: "0"}}).setUrl("https://www.researchgate.net/publication/329170562_Sentinel-based_Azores_Regional_Forest_Inventory")
     ]),
   };
@@ -107,7 +105,7 @@ app.createPanels = function() {
   /* The panel for the visualization section with corresponding widgets. */
   app.vis.panel = ui.Panel({
     widgets: [
-      ui.Label('Vegetation indexes', {fontWeight: 'bold', color:'Green'}),
+      ui.Label('Vegetation Assessment', {fontWeight: 'bold', color:'Green'}),
       app.vis.select,
       app.vis.label
     ],
@@ -118,58 +116,7 @@ app.createPanels = function() {
   app.vis.select.setValue(app.vis.select.items().get(0));
 
 
-  //Button CVA//////////////////////////////////////////////////////////////////////////////////////////////
-  app.btn_cva = {
-    button: ui.Button({
-      label: 'Change detection',
-      // React to the button's click event.
-      onClick: function() {
-          var imageId = app.picker.select.getValue();
-          var imageId1 = app.picker.select.items().get(0);
-          Map.clear();
-          var image = ee.Image(app.COLLECTION_ID + '/' + imageId).clip(SM);
-         
-          var image1= ee.Image(app.COLLECTION_ID + '/' + imageId1).clip(SM);
-          
-          if (app.vis.select.getValue() === 'NDVI (B8-B4/B8+B4)'){// 'BSI ((B11+B4)-(B8+B2))/((B11+B4)+(B8+B2))'
-              //alert("Manu 1")
-              s2cva4VegIndex(image, image1, 'NDVI (B8-B4/B8+B4)')
-          }
-          if (app.vis.select.getValue() === 'AVI (B8*((1-B4)*(B8-B4)))^(1/3)'){
-              //s2cva4VegIndex(image2, image1, 'NDWI (B3-B8/B3+B8)')
-              s2cva4VegIndex(image, image1, 'AVI (B8*((1-B4)*(B8-B4)))^(1/3)')
-          }
-          if (app.vis.select.getValue() === 'NPCRI (B4-B2/B4+B2)'){
-              //s2cva4VegIndex(image2, image1, 'NDWI (B3-B8/B3+B8)')
-              s2cva4VegIndex(image, image1, 'NPCRI (B4-B2/B4+B2)')
-          }
-          if (app.vis.select.getValue() === 'NDWI (B3-B8/B3+B8)'){
-              //s2cva4VegIndex(image2, image1, 'NDWI (B3-B8/B3+B8)')
-              s2cva4VegIndex(image, image1, 'NDWI (B3-B8/B3+B8)')
-          }
-          if (app.vis.select.getValue() === 'NBR (B8-B12/B8+B12)'){
-              //s2cva4VegIndex(image2, image1, 'NDWI (B3-B8/B3+B8)')
-              s2cva4VegIndex(image, image1, 'NBR (B8-B12/B8+B12)')
-          }
-          if (app.vis.select.getValue() === 'BSI ((B11+B4)-(B8+B2))/((B11+B4)+(B8+B2))'){
-              //s2cva4VegIndex(image2, image1, 'NDWI (B3-B8/B3+B8)')
-              s2cva4VegIndex(image, image1, 'BSI ((B11+B4)-(B8+B2))/((B11+B4)+(B8+B2))')
-          }else{//change detection of classification !!
-              //s2cva4VegIndex(image2, image1, 'NDWI (B3-B8/B3+B8)')
-              s2cva4VegIndex(image, image1, 'BSI ((B11+B4)-(B8+B2))/((B11+B4)+(B8+B2))')
-          }
-          
-          //if (app.btn_sm)
-      }
-  })
-  }
-  app.btn_cva.panel = ui.Panel({
-    widgets: [
-      ui.Label('Change Detection', {fontWeight: 'bold'}),
-      app.btn_cva.button
-    ],
-    style: app.SECTION_STYLE
-  });
+
   //////////////////////////////////////////////////////////////////////////////
   /////////////*classification of Sao Miguel island*//////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
@@ -177,7 +124,7 @@ app.createPanels = function() {
   ///////////////////////////////////CART//////////////////////////////////////////
   app.btn_CART = {
     button: ui.Button({
-      label: 'classification using CART algorithm',
+      label: 'Mapping with CART',
       // React to the button's click event.
       onClick: function() {
           var imageId = app.picker.select.getValue();
@@ -339,15 +286,15 @@ app.createPanels = function() {
           //////////////////////////////////////////////////Area and AboveGround Carbon
           var all = classifiedCART.select(['classification']);
           var acacia = all.eq(1).multiply(ee.Image.pixelArea());
-          var lawsoniana = all.eq(2).multiply(ee.Image.pixelArea());
+          //var lawsoniana = all.eq(2).multiply(ee.Image.pixelArea());
           var cryptomeria = all.eq(3).multiply(ee.Image.pixelArea());
           var eucalyptus= all.eq(4).multiply(ee.Image.pixelArea());
           var Myrica= all.eq(5).multiply(ee.Image.pixelArea());
-          var Ofolhosas= all.eq(6).multiply(ee.Image.pixelArea());
-          var Oresinosas= all.eq(7).multiply(ee.Image.pixelArea());
-          var Persea= all.eq(8).multiply(ee.Image.pixelArea());
+          //var Ofolhosas= all.eq(6).multiply(ee.Image.pixelArea());
+          //var Oresinosas= all.eq(7).multiply(ee.Image.pixelArea());
+          //var Persea= all.eq(8).multiply(ee.Image.pixelArea());
           var Pinaster= all.eq(9).multiply(ee.Image.pixelArea());
-          var Tumbergi= all.eq(10).multiply(ee.Image.pixelArea());
+          //var Tumbergi= all.eq(10).multiply(ee.Image.pixelArea());
           var Pittosporum= all.eq(11).multiply(ee.Image.pixelArea());
           var Vegetas= all.eq(12).multiply(ee.Image.pixelArea());
           //put it in hectares and calculate sequestration Carbon
@@ -356,11 +303,11 @@ app.createPanels = function() {
           geometry: SM,
           scale: 30
           });
-          var lawstats = lawsoniana.divide(10000).multiply(79).reduceRegion({
-          reducer: ee.Reducer.sum(),
-          geometry: SM,
-          scale: 30
-          });
+          //var lawstats = lawsoniana.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: SM,
+          //scale: 30
+          //});
           var cryptomeriastats = cryptomeria.divide(10000).multiply(76.8).reduceRegion({
           reducer: ee.Reducer.sum(),
           geometry: SM,
@@ -376,21 +323,21 @@ app.createPanels = function() {
           geometry: SM,
           scale: 30
           });
-          var Ofolhosasstats = Ofolhosas.divide(10000).multiply(79).reduceRegion({
-          reducer: ee.Reducer.sum(),
-          geometry: SM,
-          scale: 30
-          });
-          var Oresinosasstats = Oresinosas.divide(10000).multiply(79).reduceRegion({
-          reducer: ee.Reducer.sum(),
-          geometry: SM,
-          scale: 30
-          });
-          var Perseastats = Persea.divide(10000).multiply(79).reduceRegion({
-          reducer: ee.Reducer.sum(),
-          geometry: SM,
-          scale: 30
-          });
+          //var Ofolhosasstats = Ofolhosas.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: SM,
+          //scale: 30
+          //});
+          //var Oresinosasstats = Oresinosas.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: SM,
+          //scale: 30
+          //});
+          //var Perseastats = Persea.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: SM,
+          //scale: 30
+          //});
           var Pinasterstats = Pinaster.divide(10000).multiply(89.7).reduceRegion({
           reducer: ee.Reducer.sum(),
           geometry: SM,
@@ -402,16 +349,141 @@ app.createPanels = function() {
           scale: 30
           });
           print('Total carbon sequestration of Acacia melanoxylon: ', acastats.get('classification'), ' Mg C');
-          print('Total carbon sequestration of Chamaecyparis Lawsoniana: ', lawstats.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Chamaecyparis Lawsoniana: ', lawstats.get('classification'), ' Mg C');
           print('Total carbon sequestration of Cryptomeria japonica: ', cryptomeriastats.get('classification'), ' Mg C');
           print('Total carbon sequestration of Eucalyptus globulus: ', eucalyptusstats.get('classification'), ' Mg C');
           print('Total carbon sequestration of Myrica faya: ', Myricastats.get('classification'), ' Mg C');
-          print('Total carbon sequestration of Persea indica: ', Perseastats.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Persea indica: ', Perseastats.get('classification'), ' Mg C');
           print('Total carbon sequestration of Pinus pinaster: ', Pinasterstats.get('classification'), ' Mg C');
           print('Total carbon sequestration of Pittosporum undulatum: ', Pittosporumstats.get('classification'), ' Mg C');
           
           //Map.addLayer(newclassified, {min: 0, max: 12, palette: palette},'change detection map CART');
-  }
+  
+        var options1 = {
+          title: 'Carbon sequestration in the entire island of Sao Miguel in Mg C. and (%)'
+          };
+          
+          var dataTable1={
+            cols: [{id: 'name', label: 'Type name', type: 'string'},
+            {id: 'carbon', label: 'Mg C', type: 'number'}],
+            rows: [{c: [{v: 'Acacia Melanoxylon'}, {v: ee.Number(acastats.get('classification')).getInfo()}]},
+            //{c: [{v: 'Chamaecyparis lawsoniana'}, {v: ee.Number(lawstats.get('classification')).getInfo()}]},
+            {c: [{v: 'Cryptomeria japonica'}, {v: ee.Number(cryptomeriastats.get('classification')).getInfo()}]},
+            {c: [{v: 'Eucalyptus globulus'}, {v: ee.Number(eucalyptusstats.get('classification')).getInfo()}]},
+            {c: [{v: 'Myrica faya'}, {v: ee.Number(Myricastats.get('classification')).getInfo()}]},
+            //{c: [{v: 'Persea indica'}, {v: ee.Number(Perseastats.get('classification')).getInfo()}]},
+            {c: [{v: 'Pinus pinaster'}, {v: ee.Number(Pinasterstats.get('classification')).getInfo()}]},
+            {c: [{v: 'Pittosporum undulatum'}, {v: ee.Number(Pittosporumstats.get('classification')).getInfo()}]}]
+          };
+          
+          var chart = new ui.Chart(dataTable1, 'PieChart')
+          .setOptions(options1);
+          
+          //print(chart);
+          
+          
+      //----------------------------------PERIMETRO FORESTAL--------------------------------------------------------------
+       
+          //put it in hectares and calculate sequestration Carbon
+          var acastatsF = acacia.divide(10000).multiply(126.1).reduceRegion({
+          reducer: ee.Reducer.sum(),
+          geometry: forest,
+          scale: 30
+          });
+          //var lawstatsF = lawsoniana.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: forest,
+          //scale: 30
+          //});
+          var cryptomeriastatsF = cryptomeria.divide(10000).multiply(76.8).reduceRegion({
+          reducer: ee.Reducer.sum(),
+          geometry: forest,
+          scale: 30
+          });
+          var eucalyptusstatsF = eucalyptus.divide(10000).multiply(92.2).reduceRegion({
+          reducer: ee.Reducer.sum(),
+          geometry: forest,
+          scale: 30
+          });
+          var MyricastatsF = Myrica.divide(10000).multiply(79).reduceRegion({
+          reducer: ee.Reducer.sum(),
+          geometry: forest,
+          scale: 30
+          });
+          //var PerseastatsF = Persea.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: forest,
+          //scale: 30
+          //});
+          var PinasterstatsF = Pinaster.divide(10000).multiply(89.7).reduceRegion({
+          reducer: ee.Reducer.sum(),
+          geometry: forest,
+          scale: 30
+          });
+          var PittosporumstatsF = Pittosporum.divide(10000).multiply(128.65).reduceRegion({
+          reducer: ee.Reducer.sum(),
+          geometry: forest,
+          scale: 30
+          });
+          //print('Total carbon sequestration of Acacia melanoxylon in forest perimeter: ', acastatsF.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Chamaecyparis Lawsoniana in forest perimeter: ', lawstatsF.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Cryptomeria japonica in forest perimeter: ', cryptomeriastatsF.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Eucalyptus globulus in forest perimeter: ', eucalyptusstatsF.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Myrica faya in forest perimeter: ', MyricastatsF.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Persea indica in forest perimeter: ', PerseastatsF.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Pinus pinaster in forest perimeter: ', PinasterstatsF.get('classification'), ' Mg C');
+          //print('Total carbon sequestration of Pittosporum undulatum in forest perimeter: ', PittosporumstatsF.get('classification'), ' Mg C');
+          
+          //print('Keys: ',acastatsF.keys());
+          
+          var options = {
+          title: 'Carbon sequestration in the forest perimeter of Sao Miguel in Mg C.and (%)'
+          };
+          
+          var dataTable2={
+           cols: [{id: 'name', label: 'Type name', type: 'string'},
+            {id: 'carbon', label: ' Total Mg C', type: 'number'}],
+            rows: [{c: [{v: 'Acacia Melanoxylon'}, {v: ee.Number(acastatsF.get('classification')).getInfo()}]},
+            //{c: [{v: 'Chamaecyparis lawsoniana'}, {v: ee.Number(lawstatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Cryptomeria japonica'}, {v: ee.Number(cryptomeriastatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Eucalyptus globulus'}, {v: ee.Number(eucalyptusstatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Myrica faya'}, {v: ee.Number(MyricastatsF.get('classification')).getInfo()}]},
+            //{c: [{v: 'Persea indica'}, {v: ee.Number(PerseastatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Pinus pinaster'}, {v: ee.Number(PinasterstatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Pittosporum undulatum'}, {v: ee.Number(PittosporumstatsF.get('classification')).getInfo()}]}]
+          };
+          
+          var chart3 = new ui.Chart(dataTable2, 'PieChart')
+          .setOptions(options);
+          
+          var dataTable={
+            cols: [{id: 'name', label: 'Type name', type: 'string'},
+            {id: 'carbon', label: 'Mg C/ Ha', type: 'number'},
+            {id: 'carbon', label: 'Mg C', type: 'number'}],
+            rows: [{c: [{v: 'Acacia Melanoxylon'},{v: '126.1 '}, {v: ee.Number(acastatsF.get('classification')).getInfo()}]},
+            //{c: [{v: 'Chamaecyparis lawsoniana'},{v: '79 '}, {v: ee.Number(lawstatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Cryptomeria japonica'},{v: '76.8 '}, {v: ee.Number(cryptomeriastatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Eucalyptus globulus'},{v: '92.2 '}, {v: ee.Number(eucalyptusstatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Myrica faya'},{v: '79 '}, {v: ee.Number(MyricastatsF.get('classification')).getInfo()}]},
+            //{c: [{v: 'Persea indica'},{v: '79 '}, {v: ee.Number(PerseastatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Pinus pinaster'},{v: '89.7 '}, {v: ee.Number(PinasterstatsF.get('classification')).getInfo()}]},
+            {c: [{v: 'Pittosporum undulatum'},{v: '128.65 '}, {v: ee.Number(PittosporumstatsF.get('classification')).getInfo()}]}]
+          };
+          
+          var chart2 = new ui.Chart(dataTable, 'Table');
+          
+          
+          //print(chart2);
+          
+          Map.addLayer(forest);
+          
+          print(chart2,chart3);
+        
+        
+        
+        
+        
+      }
   })
 };
   
@@ -420,41 +492,22 @@ app.createPanels = function() {
   
   app.btn_CART.panel = ui.Panel({
     widgets: [
-      ui.Label('-CART', {fontWeight: 'bold'}),
-      app.btn_CART.button
-      //button of other islands
+      ui.Label('Mapping', {fontWeight: 'bold'}),
+      app.btn_CART.button,
+      
+      
     ],
     style: app.SECTION_STYLE
   });
   
-  app.btn_land={
-    button: ui.Button({
-      label: 'Landslide risk detection',
-      onClick: function() {
-          var imageId = app.picker.select.getValue();
-          var imageId1 = app.picker.select.items().get(0);
-          
-          Map.clear();
-          var image = ee.Image(app.COLLECTION_ID + '/' + imageId).clip(SM);
-          var image1= ee.Image(app.COLLECTION_ID + '/' + imageId1).clip(SM);
-          var srtm = ee.Image('CGIAR/SRTM90_V4');
-
-          // Apply an algorithm to an image.
-          var slope = ee.Terrain.slope(srtm);
-          
-          // Get the aspect (in degrees).
-          var aspect = ee.Terrain.aspect(srtm);
-          // Convert to radians, compute the sin of the aspect.
-          var sinImage = aspect.divide(180).multiply(Math.PI).sin();
-      }
-      })
-  };
+  
+ 
   /////////////////////////////////////////Classification Random Forest////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////
   
     app.btn_RF = {
     button: ui.Button({
-      label: 'classification using Random Forest algorithm',
+      label: 'Mapping with RF',
       // React to the button's click event.
       onClick: function() {
           var imageId = app.picker.select.getValue(); //image ID selected by the user
@@ -569,6 +622,7 @@ app.createPanels = function() {
       var classifiedRF = composite.classify(classifierRF);
       Map.centerObject(newfc);
       var classifiedRF_first = composite.classify(classifierRF_first);
+      Map.addLayer(classifiedRF, {min: 0, max: 12, palette: palette},'RF classification');
 // Optionally, do some accuracy assessment.  Fist, add a column of
 // random uniforms to the training dataset.
       var split = 0.7;  // Roughly 70% training, 30% testing.
@@ -616,15 +670,15 @@ app.createPanels = function() {
           var all = classifiedRF.select(['classification']);
           var all_first = classifiedRF_first.select(['classification']);
           var acacia = all.eq(1).multiply(ee.Image.pixelArea());
-          var lawsoniana = all.eq(2).multiply(ee.Image.pixelArea());
+          //var lawsoniana = all.eq(2).multiply(ee.Image.pixelArea());
           var cryptomeria = all.eq(3).multiply(ee.Image.pixelArea());
           var eucalyptus= all.eq(4).multiply(ee.Image.pixelArea());
           var Myrica= all.eq(5).multiply(ee.Image.pixelArea());
-          var Ofolhosas= all.eq(6).multiply(ee.Image.pixelArea());
-          var Oresinosas= all.eq(7).multiply(ee.Image.pixelArea());
-          var Persea= all.eq(8).multiply(ee.Image.pixelArea());
+          //var Ofolhosas= all.eq(6).multiply(ee.Image.pixelArea());
+          //var Oresinosas= all.eq(7).multiply(ee.Image.pixelArea());
+          //var Persea= all.eq(8).multiply(ee.Image.pixelArea());
           var Pinaster= all.eq(9).multiply(ee.Image.pixelArea());
-          var Tumbergi= all.eq(10).multiply(ee.Image.pixelArea());
+          //var Tumbergi= all.eq(10).multiply(ee.Image.pixelArea());
           var Pittosporum= all.eq(11).multiply(ee.Image.pixelArea());
           var Vegetas= all.eq(12).multiply(ee.Image.pixelArea());
           //put it in hectares and calculate sequestration Carbon
@@ -633,11 +687,11 @@ app.createPanels = function() {
           geometry: SM,
           scale: 30
           });
-          var lawstats = lawsoniana.divide(10000).multiply(79).reduceRegion({
-          reducer: ee.Reducer.sum(),
-          geometry: SM,
-          scale: 30
-          });
+          //var lawstats = lawsoniana.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: SM,
+          //scale: 30
+          //});
           var cryptomeriastats = cryptomeria.divide(10000).multiply(76.8).reduceRegion({
           reducer: ee.Reducer.sum(),
           geometry: SM,
@@ -653,11 +707,11 @@ app.createPanels = function() {
           geometry: SM,
           scale: 30
           });
-          var Perseastats = Persea.divide(10000).multiply(79).reduceRegion({
-          reducer: ee.Reducer.sum(),
-          geometry: SM,
-          scale: 30
-          });
+          //var Perseastats = Persea.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: SM,
+          //scale: 30
+          //});
           var Pinasterstats = Pinaster.divide(10000).multiply(89.7).reduceRegion({
           reducer: ee.Reducer.sum(),
           geometry: SM,
@@ -684,11 +738,11 @@ app.createPanels = function() {
             cols: [{id: 'name', label: 'Type name', type: 'string'},
             {id: 'carbon', label: 'Mg C', type: 'number'}],
             rows: [{c: [{v: 'Acacia Melanoxylon'}, {v: ee.Number(acastats.get('classification')).getInfo()}]},
-            {c: [{v: 'Chamaecyparis lawsoniana'}, {v: ee.Number(lawstats.get('classification')).getInfo()}]},
+            //{c: [{v: 'Chamaecyparis lawsoniana'}, {v: ee.Number(lawstats.get('classification')).getInfo()}]},
             {c: [{v: 'Cryptomeria japonica'}, {v: ee.Number(cryptomeriastats.get('classification')).getInfo()}]},
             {c: [{v: 'Eucalyptus globulus'}, {v: ee.Number(eucalyptusstats.get('classification')).getInfo()}]},
             {c: [{v: 'Myrica faya'}, {v: ee.Number(Myricastats.get('classification')).getInfo()}]},
-            {c: [{v: 'Persea indica'}, {v: ee.Number(Perseastats.get('classification')).getInfo()}]},
+            //{c: [{v: 'Persea indica'}, {v: ee.Number(Perseastats.get('classification')).getInfo()}]},
             {c: [{v: 'Pinus pinaster'}, {v: ee.Number(Pinasterstats.get('classification')).getInfo()}]},
             {c: [{v: 'Pittosporum undulatum'}, {v: ee.Number(Pittosporumstats.get('classification')).getInfo()}]}]
           };
@@ -707,11 +761,11 @@ app.createPanels = function() {
           geometry: forest,
           scale: 30
           });
-          var lawstatsF = lawsoniana.divide(10000).multiply(79).reduceRegion({
-          reducer: ee.Reducer.sum(),
-          geometry: forest,
-          scale: 30
-          });
+          //var lawstatsF = lawsoniana.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: forest,
+          //scale: 30
+          //});
           var cryptomeriastatsF = cryptomeria.divide(10000).multiply(76.8).reduceRegion({
           reducer: ee.Reducer.sum(),
           geometry: forest,
@@ -727,11 +781,11 @@ app.createPanels = function() {
           geometry: forest,
           scale: 30
           });
-          var PerseastatsF = Persea.divide(10000).multiply(79).reduceRegion({
-          reducer: ee.Reducer.sum(),
-          geometry: forest,
-          scale: 30
-          });
+          //var PerseastatsF = Persea.divide(10000).multiply(79).reduceRegion({
+          //reducer: ee.Reducer.sum(),
+          //geometry: forest,
+          //scale: 30
+          //});
           var PinasterstatsF = Pinaster.divide(10000).multiply(89.7).reduceRegion({
           reducer: ee.Reducer.sum(),
           geometry: forest,
@@ -761,11 +815,11 @@ app.createPanels = function() {
            cols: [{id: 'name', label: 'Type name', type: 'string'},
             {id: 'carbon', label: ' Total Mg C', type: 'number'}],
             rows: [{c: [{v: 'Acacia Melanoxylon'}, {v: ee.Number(acastatsF.get('classification')).getInfo()}]},
-            {c: [{v: 'Chamaecyparis lawsoniana'}, {v: ee.Number(lawstatsF.get('classification')).getInfo()}]},
+            //{c: [{v: 'Chamaecyparis lawsoniana'}, {v: ee.Number(lawstatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Cryptomeria japonica'}, {v: ee.Number(cryptomeriastatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Eucalyptus globulus'}, {v: ee.Number(eucalyptusstatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Myrica faya'}, {v: ee.Number(MyricastatsF.get('classification')).getInfo()}]},
-            {c: [{v: 'Persea indica'}, {v: ee.Number(PerseastatsF.get('classification')).getInfo()}]},
+            //{c: [{v: 'Persea indica'}, {v: ee.Number(PerseastatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Pinus pinaster'}, {v: ee.Number(PinasterstatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Pittosporum undulatum'}, {v: ee.Number(PittosporumstatsF.get('classification')).getInfo()}]}]
           };
@@ -778,11 +832,11 @@ app.createPanels = function() {
             {id: 'carbon', label: 'Mg C/ Ha', type: 'number'},
             {id: 'carbon', label: 'Mg C', type: 'number'}],
             rows: [{c: [{v: 'Acacia Melanoxylon'},{v: '126.1 '}, {v: ee.Number(acastatsF.get('classification')).getInfo()}]},
-            {c: [{v: 'Chamaecyparis lawsoniana'},{v: '79 '}, {v: ee.Number(lawstatsF.get('classification')).getInfo()}]},
+            //{c: [{v: 'Chamaecyparis lawsoniana'},{v: '79 '}, {v: ee.Number(lawstatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Cryptomeria japonica'},{v: '76.8 '}, {v: ee.Number(cryptomeriastatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Eucalyptus globulus'},{v: '92.2 '}, {v: ee.Number(eucalyptusstatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Myrica faya'},{v: '79 '}, {v: ee.Number(MyricastatsF.get('classification')).getInfo()}]},
-            {c: [{v: 'Persea indica'},{v: '79 '}, {v: ee.Number(PerseastatsF.get('classification')).getInfo()}]},
+            //{c: [{v: 'Persea indica'},{v: '79 '}, {v: ee.Number(PerseastatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Pinus pinaster'},{v: '89.7 '}, {v: ee.Number(PinasterstatsF.get('classification')).getInfo()}]},
             {c: [{v: 'Pittosporum undulatum'},{v: '128.65 '}, {v: ee.Number(PittosporumstatsF.get('classification')).getInfo()}]}]
           };
@@ -804,7 +858,7 @@ app.createPanels = function() {
 
   app.btn_RF.panel = ui.Panel({
     widgets: [
-      ui.Label('-Random Forest', {fontWeight: 'bold'}),
+      ui.Label('', {fontWeight: 'bold'}),
       app.btn_RF.button
       //button of other islands
     ],
@@ -813,24 +867,7 @@ app.createPanels = function() {
   
   
   /////////////////////////////////////////End Random Forest//////////////////////////////////////////////
-   app.btn_land.panel = ui.Panel({
-    widgets: [
-      ui.Label('Landslide risk detection', {fontWeight: 'bold'}),
-      app.btn_land.button
-      //button of other islands
-    ],
-    style: app.SECTION_STYLE
-  });
-  
-  app.btn_cva.panel = ui.Panel({
-    widgets: [
-      ui.Label('Change Detection', {fontWeight: 'bold'}),
-      app.btn_cva.button
-    ],
-    style: app.SECTION_STYLE
-  });
-
-  
+ 
 };
 
 /** Creates the app helper functions. */
@@ -854,9 +891,6 @@ app.createHelpers = function() {
       app.picker.centerButton,
       app.btn_CART.button,
       app.btn_RF.button,
-      //app.export.button,
-      app.btn_land.button,
-      app.btn_cva.button,
     ];
     loadDependentWidgets.forEach(function(widget) {
       widget.setDisabled(enabled);
@@ -1364,8 +1398,6 @@ app.boot = function() {
       app.vis.panel,
       app.btn_CART.panel,
       app.btn_RF.panel,
-      app.btn_land.panel,
-      app.btn_cva.panel
     ],
     style: {width: '350px', padding: '15px'}
   });
