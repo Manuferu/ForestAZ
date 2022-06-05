@@ -21,7 +21,7 @@ In addition, the code and features used to develop de app and the information on
 
  - Points: This shapefile contains points with different tree species taken from the last official forest inventory from DRRF (Azores Regional Authority in Forest Affairs). This points have been used in the code to both train and validate the classification by splitting them in 70% for training and 30% for validating.
 
-It has been used [Sentinel-2 MSI, Level-2A](https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR) and [Sentinel-1 SAR GRD](https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S1_GRD?hl=en). Sentinel 2 product is surface reflectance, it has been corrected using [Sen2cor](https://www.spiedigitallibrary.org/conference-proceedings-of-spie/10427/0000/Sen2Cor-for-Sentinel-2/10.1117/12.2278218.short) from the effects of the atmosphere, terrain and cirrus correction from the Top of Atmosphere Level 1C.
+It has been used [Sentinel-2 MSI, Level-2A](https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR) and [Sentinel-1 SAR GRD](https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S1_GRD?hl=en). Sentinel 2 product is surface reflectance, it has been corrected using [cloud removal algorithm](https://github.com/fitoprincipe/geetools-code-editor) from the effects of the atmosphere, terrain and cirrus correction from the Top of Atmosphere Level 1C implemented by Rodrigo E. Principe 2019.
 
 Sentinel 1 GRD (Ground Range Detected), uses [Sentinel-1 Toolbox](https://elib.dlr.de/89926/) to generate calibrated and orthocorrected product. Each scene was pre-processed using Sentinel-1 toolbox in the following steps: thermal noise removal, radiometric calibration, terrain correction using SRTM 30 and ASTER DEM.
 
@@ -39,7 +39,9 @@ To make it run in your side, you will need to create a [Google Earth Engine acco
  Artur Gil : artur.jf.gil@uac.pt 
 
 ## References:
+
 - Mullissa, A.; Vollrath, A.; Odongo-Braun, C.; Slagter, B.; Balling, J.; Gou, Y.; Gorelick, N.; Reiche, J. Sentinel-1 SAR Backscatter Analysis Ready Data Preparation in Google Earth Engine. Remote Sens. 2021, 13, 1954. https://doi.org/10.3390/rs13101954
+- Principe, Rodrigo E. 2022. cloud masks. https://github.com/fitoprincipe/geetools-code-editor/blob/master/cloud_masks (2022)
 
 
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
