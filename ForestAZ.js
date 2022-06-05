@@ -18,7 +18,7 @@ var SM = ee.FeatureCollection("users/Manuferu/SM_Admin0"),
 var app = {};
 
 app.createPanels = function() {
-  /* The introduction section. */
+/* The introduction section. */
   app.intro = {
     legend: ui.Panel({style: {position: "top-left", padding: "8px 15px"}}),
     panel: ui.Panel([
@@ -59,6 +59,8 @@ app.createPanels = function() {
     ],
     style: app.SECTION_STYLE
   });
+  
+ 
 
   /* The image picker section. */
   app.picker = {
@@ -237,36 +239,24 @@ app.createPanels = function() {
           var bandsS1=["VV","VH"];
           image = image.addBands(S1_ard.select(bandsS1)).clip(SM);
           image1 = image1.addBands(S1_ard_2.select(bandsS1)).clip(SM);
-         ////////////
-         // cloud and cirrus masking
-         ///
-         /////////////////
+          ////////////
+          // 
+          // Title Sentinel 2 cloud mask
+          //
+          // 
+          //
+          // citation: Rodrigo E Principe
+          //
+          // repository: https://github.com/fitoprincipe/geetools-code-editor
+          /////////////////
          
-          var computeQAbits = function(image, start, end, newName) {
-          var pattern = 0;
-          for (var i=start; i<=end; i++) {
-            pattern += Math.pow(2, i);
-          }
-          return image.select([0], [newName]).bitwiseAnd(pattern).rightShift(start);
-          };
-    
-          var cloud_mask = image.select("QA60");
-          var cloud_mask_first_image= image1.select("QA60");
-          var opaque = computeQAbits(cloud_mask, 10, 10, "opaque");
-          var opaque_first=computeQAbits(cloud_mask_first_image, 10, 10, "opaque");
-          var cirrus = computeQAbits(cloud_mask, 11, 11, "cirrus");
-          var cirrus_first=computeQAbits(cloud_mask_first_image, 11, 11, "cirrus");
-          var mask = opaque.or(cirrus);
-          var mask_first = opaque_first.or(cirrus_first);
           
-          var compos_first=image1.updateMask(mask_first.not()).clip(SM);    
-          
-          var composite =image.updateMask(mask.not()).clip(SM);
-          
-          //print(composite);
-          
+          var cloud_masks = require('users/fitoprincipe/geetools:cloud_masks');
+          var sentinel2function = cloud_masks.sentinel2();
+          var compos_first = sentinel2function(image1);
+          var composite = sentinel2function(image);
 
-          ////////////////////////////////////////////////////////////////////////////////////////
+          ////////////////////End cloud mask////////////////////////////////////////////////////////////////////
           // Use these bands for classification.
           
           var bands = ["B[2-8].*","B1[0-2]","VV","VH"];
@@ -281,11 +271,7 @@ app.createPanels = function() {
           properties: [classProperty],
           scale: 30
           });
-          var training_first = compos_first.select(bands).sampleRegions({
-          collection: newfc,
-          properties: [classProperty],
-          scale: 30
-          });
+          
 
           
           
@@ -295,7 +281,7 @@ app.createPanels = function() {
           ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
           // Train a CART classifier.
-          var classifierCART = ee.Classifier.smileCart().train({
+          var classifierCART = ee.Classifier.smileCart(25).train({
           features: training,
           classProperty: classProperty,
           });
@@ -305,37 +291,23 @@ app.createPanels = function() {
 
           // Classify the composite.
           var classifiedCART = composite.classify(classifierCART);
-          var classifiedCART_first = compos_first.classify(classifierCART);// first image of the date range
+          //var classifiedCART_first = compos_first.classify(classifierCART);// first image of the date range
           Map.centerObject(newfc);
           var palette =['006400', 'EEE8AA','8B4513', '98FB98', '00FA9A','FF8C00', '0073FF'];
           //var palette_sub =['006400','EEE8AA','8B4513','98FB98','FF8C00','808080','0073FF'];
           //Map.addLayer(classifiedCART_first, {min: 0, max: 11, palette: palette},'CART classification first');
           Map.addLayer(classifiedCART.clip(forest), {min: 1, max: 7, palette: palette},'CART classification');
-          //print(classifiedCART.select("classification").eq(0));
-          //var Aca = classifiedCART.select("classification").eq(0);
-          //var Crypto = classifiedCART.select("classification").eq(2);
-          //var Euca = classifiedCART.select("classification").eq(3);
-          //var Myrica = classifiedCART.select("classification").eq(4);
-          //var pin = classifiedCART.select("classification").eq(8);
-          //var pittos = classifiedCART.select("classification").eq(10);
-          //var veges = classifiedCART.select("classification").eq(11);
           
-          //var classifiedCART_sub = ee.Image([Aca,Crypto,Euca,Myrica,pin,pittos,veges]).clip(forest);
-          //print(classifiedCART_sub);
-          
-          //Map.addLayer(classifiedCART_sub,{bands:['classification']},'CART classification');
-          //print(classifiedCART.select(0));
 
-          // Optionally, do some accuracy assessment.  Fist, add a column of
-          // random uniforms to the training dataset.
+          // Do some accuracy assessment.  Fist, add a column of random uniforms to the training dataset.
           var withRandom = training.randomColumn('random');
-          var withRandom_first=training_first.randomColumn('random')
+          //var withRandom_first=training_first.randomColumn('random')
           // We want to reserve some of the data for testing, to avoid overfitting the model.
           var split = 0.7;  // Roughly 70% training, 30% testing.
           var trainingPartition = withRandom.filter(ee.Filter.lt('random', split));
           var testingPartition = withRandom.filter(ee.Filter.gte('random', split));
-          var trainingPartition_first=withRandom_first.filter(ee.Filter.lt('random', split));
-          var testingPartition_first = withRandom_first.filter(ee.Filter.gte('random', split));
+          //var trainingPartition_first=withRandom_first.filter(ee.Filter.lt('random', split));
+          //var testingPartition_first = withRandom_first.filter(ee.Filter.gte('random', split));
           
           // Trained with 70% of our data.
           var trainedClassifier = ee.Classifier.gmoMaxEnt().train({
@@ -344,24 +316,18 @@ app.createPanels = function() {
             inputProperties: bands
           });
           
-          var trainedClassifier_first = ee.Classifier.gmoMaxEnt().train({
-            features: trainingPartition_first,
-            classProperty: classProperty,
-            inputProperties: bands
-          });
-          
           // Classify the test FeatureCollection.
           var test = testingPartition.classify(trainedClassifier);
-          var test_first=testingPartition_first.classify(trainedClassifier_first)
+          //var test_first=testingPartition_first.classify(trainedClassifier_first)
           // Print the confusion matrix.
           var confusionMatrix = test.errorMatrix(classProperty, 'classification');
-          var confusionMatrix_first=test_first.errorMatrix(classProperty, 'classification');
+          //var confusionMatrix_first=test_first.errorMatrix(classProperty, 'classification');
           
           var trainAccuracyCART = classifierCART.confusionMatrix();
-          var trainAccuracyCART_first = classifierCART.confusionMatrix();
-          print('Resubstitution error matrix: ', trainAccuracyCART);
+          //var trainAccuracyCART_first = classifierCART.confusionMatrix();
+          print('Resubstitution error matrix: ', trainAccuracyCART.array());
           print('Training overall accuracy CART: ', trainAccuracyCART.kappa());
-          print('Training overall accuracy CART first image: ', trainAccuracyCART_first.kappa());
+          //print('Training overall accuracy CART first image: ', trainAccuracyCART_first.kappa());
           
           
           
@@ -602,6 +568,7 @@ app.createPanels = function() {
     // name of the legend
     var names =['Acacia melanoxylon','Cryptomaeria japonica','Eucalyptus globulus','Myrica faya','Pinus pinaster','Pittosporum undulatum','Other native vegetation patches'];
     // Add color and and names
+    var trainarray = trainAccuracyCART.array();
     for (var i = 0; i < 7; i++) {
       //print(palette[i]);
       //print(names[i]);
@@ -609,33 +576,82 @@ app.createPanels = function() {
       }
     legend.add(chart3);
     legend.add(chart2);
+      // Create legend title
+        var classlegend = ui.Panel({
+          style: {
+            width: "400px",
+            position: 'top-center',
+            padding: '8px 20px'
+          }
+        });
 
+        var classlegend_title = ui.Label({
+        value: 'classifier stats',
+        style: {
+          fontWeight: 'bold',
+          fontSize: '15px',
+          margin: '0 0 4px 0',
+          padding: '0'
+        }
+        });
+        var accuracyCART = trainAccuracyCART.kappa();
+       
+    //trainAccuracyCART.evaluate(function(trainclient){
+    //  classlegend.add(ui.Label({
+    //    value: trainclient,
+    //    style: {
+    //      fontWeight: 'bold',
+    //      fontSize: '15px',
+    //      margin: '0 0 4px 0',
+    //      padding: '0'
+    //    }
+    //    }));
+    //});
+    var dataclassifiers={
+           cols: [{id: 'name', label: 'Name', type: 'string'},
+            {id: 'number', label: ' Value', type: 'number'}],
+            rows: [{c: [{v: 'Overall accuracy'}, {v: ee.Number(trainAccuracyCART.accuracy()).getInfo()}]},
+            {c: [{v: 'Kappa statistic'}, {v: ee.Number(trainAccuracyCART.kappa()).getInfo()}]}
+            ]};
+    var chartclass = new ui.Chart(dataclassifiers, 'Table');
+    
+    //accuracyCART.evaluate(function(accuracyclient){
+    //  classlegend.add(print('Overall accuracy',ui.Label({
+    //    value: accuracyclient,
+    //    style: {
+    //      fontWeight: 'bold',
+    //      fontSize: '15px',
+    //      margin: '0 0 4px 0',
+    //      padding: '0'
+    //    }
+    //    })));
+    //});
     Map.add(legend);
+    classlegend.add(classlegend_title);
+    classlegend.add(chartclass);
+    Map.add(classlegend);
         
-        
-      }
+    }
   })
 };
   
-  ///////////////////////////////////END CART//////////////////////////////////////
+  
   
   
   app.btn_CART.panel = ui.Panel({
     widgets: [
       ui.Label('Mapping (Public Forest Perimeter of São Miguel Island)', {fontWeight: 'bold'}),
-      app.btn_CART.button,
-      
-      
+      app.btn_CART.button
     ],
     style: app.SECTION_STYLE
   });
   
-  
+  ///////////////////////////////////END CART//////////////////////////////////////
  
   /////////////////////////////////////////Classification Random Forest////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////////
   
-    app.btn_RF = {
+  app.btn_RF = {
     button: ui.Button({
       label: 'Mapping with RF',
       // React to the button's click event.
@@ -751,29 +767,41 @@ app.createPanels = function() {
           var bandsS1=["VV","VH"];
           image = image.addBands(S1_ard.select(bandsS1)).clip(SM);
           image1 = image1.addBands(S1_ard_2.select(bandsS1)).clip(SM);
-         //////////////////////////////////////////////////continuar por aqui///////////////
-          var computeQAbits = function(image, start, end, newName) {
-          var pattern = 0;
-          for (var i=start; i<=end; i++) {
-            pattern += Math.pow(2, i);
-          }
-          return image.select([0], [newName]).bitwiseAnd(pattern).rightShift(start);
-          };
+          ////////////
+          // 
+          // Title Sentinel 2 cloud mask
+          //
+          // citation: Rodrigo E Principe
+          //
+          // repository: https://github.com/fitoprincipe/geetools-code-editor
+          /////////////////
+          
+          
+          //var computeQAbits = function(image, start, end, newName) {
+          //var pattern = 0;
+          //for (var i=start; i<=end; i++) {
+          //  pattern += Math.pow(2, i);
+          //}
+          //return image.select([0], [newName]).bitwiseAnd(pattern).rightShift(start);
+          //};
     
-          var cloud_mask = image.select("QA60");
-          var cloud_mask_first_image= image1.select("QA60");
-          var opaque = computeQAbits(cloud_mask, 10, 10, "opaque");
-          var opaque_first=computeQAbits(cloud_mask_first_image, 10, 10, "opaque");
-          var cirrus = computeQAbits(cloud_mask, 11, 11, "cirrus");
-          var cirrus_first=computeQAbits(cloud_mask_first_image, 11, 11, "cirrus");
-          var mask = opaque.or(cirrus);
-          var mask_first = opaque_first.or(cirrus_first);
+          //var cloud_mask = image.select("QA60");
+          //var cloud_mask_first_image= image1.select("QA60");
+          //var opaque = computeQAbits(cloud_mask, 10, 10, "opaque");
+          //var opaque_first=computeQAbits(cloud_mask_first_image, 10, 10, "opaque");
+          //var cirrus = computeQAbits(cloud_mask, 11, 11, "cirrus");
+          //var cirrus_first=computeQAbits(cloud_mask_first_image, 11, 11, "cirrus");
+          //var mask = opaque.or(cirrus);
+          //var mask_first = opaque_first.or(cirrus_first);
           
-          var compos_first=image1.updateMask(mask_first.not()).clip(SM);    
+          //var compos_first=image1.updateMask(mask_first.not()).clip(SM);    
           
-          var composite =image.updateMask(mask.not()).clip(SM);
+          //var composite =image.updateMask(mask.not()).clip(SM);
           
-          
+          var cloud_masks = require('users/fitoprincipe/geetools:cloud_masks');
+          var sentinel2function = cloud_masks.sentinel2();
+          var compos_first = sentinel2function(image1);
+          var composite = sentinel2function(image);
           ////////////////////////////////////////////////////////////////////////////////////////
           // Use these bands for classification.
           
@@ -802,11 +830,11 @@ app.createPanels = function() {
 ///      *Random Forest **
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Train a Random Forest classifier.
-      var classifierRF = ee.Classifier.smileRandomForest(24).train({
+      var classifierRF = ee.Classifier.smileRandomForest(10).train({
       features: training,
       classProperty: classProperty,
       });
-      var classifierRF_first = ee.Classifier.smileRandomForest(24).train({
+      var classifierRF_first = ee.Classifier.smileRandomForest(10).train({
       features: training_first,
       classProperty: classProperty,
       });
@@ -1102,11 +1130,38 @@ app.createPanels = function() {
         }
       legend.add(chart3);
       legend.add(chart2);
+      
+      var dataclassifiers={
+           cols: [{id: 'name', label: 'Name', type: 'string'},
+            {id: 'number', label: ' Value', type: 'number'}],
+            rows: [{c: [{v: 'Overall accuracy'}, {v: ee.Number(trainAccuracyRF.accuracy()).getInfo()}]},
+            {c: [{v: 'Kappa statistic'}, {v: ee.Number(trainAccuracyRF.kappa()).getInfo()}]}
+            ]};
+      var chartclass = new ui.Chart(dataclassifiers, 'Table');
 
       Map.add(legend);
-        
-        
+      var classlegend = ui.Panel({
+          style: {
+            width: "400px",
+            position: 'top-center',
+            padding: '8px 20px'
+          }
+        });
+
+        var classlegend_title = ui.Label({
+        value: 'classifier stats',
+        style: {
+          fontWeight: 'bold',
+          fontSize: '15px',
+          margin: '0 0 4px 0',
+          padding: '0'
+        }
+        });
       
+      classlegend.add(classlegend_title);
+      classlegend.add(chartclass);
+        
+      Map.add(classlegend);
 
   }
   })
@@ -1120,192 +1175,17 @@ app.createPanels = function() {
     ],
     style: app.SECTION_STYLE
   });
-  
-  
-  /////////////////////////////////////////End Random Forest//////////////////////////////////////////////
- 
-};
-
-/** Creates the app helper functions. */
-app.createHelpers = function() {
-  /**
-   * Enables or disables loading mode.
-   * @param {boolean} enabled Whether loading mode is enabled.
-   */
-  app.setLoadingMode = function(enabled) {
-    // Set the loading label visibility to the enabled mode.
-    app.filters.loadingLabel.style().set('shown', enabled);
-    // Set each of the widgets to the given enabled mode.
-    var loadDependentWidgets = [
-      app.vis.select,
-      app.filters.startDate,
-      app.filters.endDate,
-      app.filters.cloudpercentage,
-      app.filters.applyButton,
-      app.filters.mapCenter,
-      app.picker.select,
-      app.picker.centerButton,
-      app.btn_CART.button,
-      app.btn_RF.button,
-    ];
-    loadDependentWidgets.forEach(function(widget) {
-      widget.setDisabled(enabled);
-    });
-  };
-
-  /** Applies the selection filters currently selected in the UI. */
-    app.applyFilters = function() {
-    app.setLoadingMode(true);
    
-    
+   /////////////////////////////////////////End Random Forest//////////////////////////////////////////////
    
-    var filtered = ee.ImageCollection(app.COLLECTION_ID);
-
-    var filtered2 = ee.ImageCollection(app.RadarID);
-  
-    // Filter bounds to the map if the checkbox is marked.
-    if (app.filters.mapCenter.getValue()) {
-      filtered = filtered.filterBounds(Map.getCenter());
-      
-    }
-      
-
-    // Set filter variables.
-    var start = app.filters.startDate.getValue();
-    if (start) start = ee.Date(start);
-    var end = app.filters.endDate.getValue();
-    if (end) end = ee.Date(end);
-    var cloud = app.filters.cloudpercentage.getValue();
-    //var cloud=cloud1.Tofloat();
-    if (cloud) cloud= ee.Number.parse(cloud);
-    if (start) filtered = filtered.filterDate(start, end).filterMetadata('CLOUDY_PIXEL_PERCENTAGE',"less_than",cloud)
+  app.btn_plot = {
+    button: ui.Button({
+      label: 'Show line-plot',
+      onClick: function(){
+        var panel2 = ui.Panel();
+    panel2.clear();
     
-    if (start) filtered2 = filtered2.filterDate(start, end);
-
-    
-      app.ImageCollection_filtered = filtered
-      app.ImageCollection_filtered2 = filtered2
-    
-     //var SS1N=ee.Number(image1.get('system:time_start'))
-      //    var SS1D=ee.Date(SS1N)
-
-    // Get the list of computed ids of Sentinel 2
-    var computedIds = filtered
-        .limit(app.IMAGE_COUNT_LIMIT)
-        .reduceColumns(ee.Reducer.toList(), ['system:index'])
-        .get('list');
-    print(computedIds)
-    // I have create a List with the computed ids in order to handle it better
-    var List=ee.List(computedIds)
-    
-    computedIds.evaluate(function(ids) {
-      // Update the image picker with the given list of ids.
-      app.setLoadingMode(false);
-      app.picker.select.items().reset(ids);
-      // Default the image picker to the first id.
-     app.picker.select.setValue(app.picker.select.items().get(0));
-    });
-    
-    
-  };
- 
-
-  
- 
-  /** Refreshes the current map layer based on the UI widget states. */
-  app.refreshMapLayer = function() {
-    
-    Map.clear();
-    var imageId = app.picker.select.getValue();
-    var imageId1 = app.picker.select.items().get(0);
-    
-    if (imageId) {
-      // If an image id is found, create an image.
-      var imagepre = ee.Image(app.COLLECTION_ID + '/' + imageId).clip(SM);
-      
-      var qa = imagepre.select('QA60');
-
-      // Bits 10 and 11 are clouds and cirrus, respectively.
-      var cloudBitMask = 1 << 10;
-      var cirrusBitMask = 1 << 11;
-
-      // Both flags should be set to zero, indicating clear conditions.
-      var mask = qa.bitwiseAnd(cloudBitMask).eq(0).and(qa.bitwiseAnd(cirrusBitMask).eq(0));
-      
-      var image = imagepre.updateMask(mask).divide(10000);
-     
-      var layer;
-      var image1= ee.Image(app.COLLECTION_ID + '/' + imageId1).clip(SM);
-      if (app.vis.select.getValue() === 'NDVI (B8-B4/B8+B4)') {
-        layer = s2ndvi(image);
-      } else {
-        layer = image;
-      }
-      var layer2;
-      if (app.vis.select.getValue() === 'NPCRI (B4-B2/B4+B2)') {
-        layer = s2npcri(image);
-      } else {
-        layer2 = image;
-      }
-      if (app.vis.select.getValue() === 'NDMI (B8-B11/B8+B11)') {
-        layer = s2ndmi(image);
-      } else {
-        layer2 = image;
-      }
-      
-      //AVI (B8*((1-B4)*(B8-B4)))^(1/3)
-      if (app.vis.select.getValue() === 'AVI (B8*((1-B4)*(B8-B4)))^(1/3)') {
-        layer = s2avi(image);
-        //print(image)
-      } else {
-        layer2 = image;
-      }
-      
-      if (app.vis.select.getValue() === 'NDWI (B3-B8/B3+B8)') {
-        layer = s2ndwi(image);
-        //print(image)
-      } else {
-        layer2 = image;
-      }
-      
-      if (app.vis.select.getValue() === 'NBR (B8-B12/B8+B12)') {
-        layer = s2nbr(image);
-        print(image)
-      } else {
-        layer2 = image;
-      }
-      if (app.vis.select.getValue() === 'BSI ((B11+B4)-(B8+B2))/((B11+B4)+(B8+B2))') {
-        layer = s2bsi(image);
-        print(image)
-      } else {
-        layer2 = image;
-      }
-      
-      
-      // Add the image to the map with the corresponding visualization options.
-      var visOption = app.VIS_OPTIONS[app.vis.select.getValue()];
-      Map.addLayer(layer, visOption.visParams, imageId);
-     
-
-      //Map.addLayer(layer21, visOption.visParams, imageId);
-
-
-      /////////////// Create Panel ///////////////
-      // Create a panel to hold our widgets.
-      ///////////////////////////////////////////
-      
-      var panel2 = ui.Panel();
-      
-      // Register a callback on the default map to be invoked when the map is clicked.
-      Map.onClick(function(coords) {
-        
-        panel2.clear();
-        
-        
-        panel2.style().set('width', '300px');
-      
-        // Create an intro panel with labels.
-        var intro2 = ui.Panel([
+    var intro2 = ui.Panel([
           ui.Label({
             value: 'Time-Series analysis of all images between start and end date of official forest area',
             style: {fontSize: '14px', fontWeight: 'bold'}
@@ -1313,23 +1193,8 @@ app.createHelpers = function() {
           })
         ]);
     
-        panel2.add(intro2);
-        // Create panels to hold lon/lat values.
-        var lon = ui.Label();
-        var lat = ui.Label();
-        //panel2.add(ui.Panel([lon, lat], ui.Panel.Layout.flow('horizontal')));// add coordinates of the point
-        
-        
-        // Update the lon/lat panel with values from the click event.
-        lon.setValue('lon: ' + coords.lon.toFixed(2)),
-        lat.setValue('lat: ' + coords.lat.toFixed(2));
-      
-        // Add dot for the point clicked on.//buffer of 1Km as well
-        var point = ee.Geometry.Point(coords.lon, coords.lat).buffer(10);
-        var dot = ui.Map.Layer(point, {color: '000000'});
-        Map.layers().set(1, dot);
-    
-        // Create an Band spectrum chart.
+    panel2.add(intro2);
+    // Create an Band spectrum chart.
         var bandsChart = ui.Chart.image.series(app.ImageCollection_filtered.select(['B8', 'B4', 'B3'],['nir', 'red', 'green']), forest)
             .setOptions({
               title: 'bands Reflectance',
@@ -1401,12 +1266,224 @@ app.createHelpers = function() {
               hAxis: {title: 'Date', format: 'dd-MM-yy', gridlines: {count: 7}},
             });
         panel2.widgets().set(9, npcriChart);
+      ui.root.insert(1, panel2);
         
-      });
+        
+        
+      }
+    })
+  };
+  
+  app.btn_plot.panel = ui.Panel({
+    widgets: [
+      ui.Label('Time-series line-plots', {fontWeight: 'bold'}),
+      app.btn_plot.button
+      //button of other islands
+    ],
+    style: app.SECTION_STYLE
+  });
+  
+  
+ 
+ 
+};
+
+
+  /** Applies the selection filters currently selected in the UI. */
+  app.applyFilters = function() {
+    app.setLoadingMode(true);
+   
+    
+   
+    var filtered = ee.ImageCollection(app.COLLECTION_ID);
+
+    var filtered2 = ee.ImageCollection(app.RadarID);
+  
+    // Filter bounds to the map if the checkbox is marked.
+    if (app.filters.mapCenter.getValue()) {
+      filtered = filtered.filterBounds(Map.getCenter());
       
-      Map.style().set('cursor', 'crosshair');
+    }
       
-    ui.root.insert(1, panel2);
+
+    // Set filter variables.
+    var start = app.filters.startDate.getValue();
+    if (start) start = ee.Date(start);
+    var end = app.filters.endDate.getValue();
+    if (end) end = ee.Date(end);
+    var cloud = app.filters.cloudpercentage.getValue();
+    //var cloud=cloud1.Tofloat();
+    if (cloud) cloud= ee.Number.parse(cloud);
+    if (start) filtered = filtered.filterDate(start, end).filterMetadata('CLOUDY_PIXEL_PERCENTAGE',"less_than",cloud)
+    
+    if (start) filtered2 = filtered2.filterDate(start, end);
+
+    
+      app.ImageCollection_filtered = filtered
+      app.ImageCollection_filtered2 = filtered2
+    
+     //var SS1N=ee.Number(image1.get('system:time_start'))
+      //    var SS1D=ee.Date(SS1N)
+
+    // Get the list of computed ids of Sentinel 2
+    var computedIds = filtered
+        .limit(app.IMAGE_COUNT_LIMIT)
+        .reduceColumns(ee.Reducer.toList(), ['system:index'])
+        .get('list');
+    print(computedIds)
+    // I have create a List with the computed ids in order to handle it better
+    var List=ee.List(computedIds)
+    
+    computedIds.evaluate(function(ids) {
+      // Update the image picker with the given list of ids.
+      app.setLoadingMode(false);
+      app.picker.select.items().reset(ids);
+      // Default the image picker to the first id.
+     app.picker.select.setValue(app.picker.select.items().get(0));
+    });
+    
+  };
+ 
+  //// Show plots ////
+  //app.applyPlot = function(){
+    //app.setLoadingMode(true);
+    
+    
+    
+ // };
+
+
+/** Creates the app helper functions. */
+app.createHelpers = function() {
+  /**
+   * Enables or disables loading mode.
+   * @param {boolean} enabled Whether loading mode is enabled.
+   */
+  app.setLoadingMode = function(enabled) {
+    // Set the loading label visibility to the enabled mode.
+    app.filters.loadingLabel.style().set('shown', enabled);
+    // Set each of the widgets to the given enabled mode.
+    var loadDependentWidgets = [
+      app.vis.select,
+      app.filters.startDate,
+      app.filters.endDate,
+      app.filters.cloudpercentage,
+      app.filters.applyButton,
+      //app.filters.plotButton,
+      app.filters.mapCenter,
+      app.picker.select,
+      app.picker.centerButton,
+      //app.btn_plot.button,
+      app.btn_CART.button,
+      app.btn_RF.button,
+    ];
+    loadDependentWidgets.forEach(function(widget) {
+      widget.setDisabled(enabled);
+    });
+  };
+  
+ 
+  /** Refreshes the current map layer based on the UI widget states. */
+  app.refreshMapLayer = function() {
+    
+    Map.clear();
+    var imageId = app.picker.select.getValue();
+    var imageId1 = app.picker.select.items().get(0);
+    
+    if (imageId) {
+      // If an image id is found, create an image.
+      var imagepre = ee.Image(app.COLLECTION_ID + '/' + imageId).clip(SM);
+      
+      //var qa = imagepre.select('QA60');
+
+      // Bits 10 and 11 are clouds and cirrus, respectively.
+      //var cloudBitMask = 1 << 10;
+      //var cirrusBitMask = 1 << 11;
+
+      // Both flags should be set to zero, indicating clear conditions.
+      //var mask = qa.bitwiseAnd(cloudBitMask).eq(0).and(qa.bitwiseAnd(cirrusBitMask).eq(0));
+      
+      //var image = imagepre.updateMask(mask).divide(10000);
+      
+      ////////////
+      // 
+      // Title Sentinel 2 cloud mask
+      //
+      // 
+      //
+      // citation: Rodrigo E Principe
+      //
+      // repository: https://github.com/fitoprincipe/geetools-code-editor
+      /////////////////
+      
+      var cloud_masks = require('users/fitoprincipe/geetools:cloud_masks');
+      var sentinel2function = cloud_masks.sentinel2();
+      //var compos_first = sentinel2function(image1);
+      var image = sentinel2function(imagepre);
+      
+      // End cloud mask
+      ///////////////////
+      
+      var layer;
+      //var image1= ee.Image(app.COLLECTION_ID + '/' + imageId1).clip(SM);
+      
+      if (app.vis.select.getValue() === 'RGB (B4,B3,B2)') {
+        layer = image.divide(10000);
+        
+      } else {
+        layer = image;
+      }
+      var layer2;
+      if (app.vis.select.getValue() === 'NDVI (B8-B4/B8+B4)') {
+        layer = s2ndvi(image);
+      } else {
+        layer2 = image;
+      }
+      if (app.vis.select.getValue() === 'NPCRI (B4-B2/B4+B2)') {
+        layer = s2npcri(image);
+      } else {
+        layer2 = image;
+      }
+      if (app.vis.select.getValue() === 'NDMI (B8-B11/B8+B11)') {
+        layer = s2ndmi(image);
+      } else {
+        layer2 = image;
+      }
+      
+      if (app.vis.select.getValue() === 'NDWI (B3-B8/B3+B8)') {
+        layer = s2ndwi(image);
+        //print(image)
+      } else {
+        layer2 = image;
+      }
+      
+      if (app.vis.select.getValue() === 'NBR (B8-B12/B8+B12)') {
+        layer = s2nbr(image);
+        print(image)
+      } else {
+        layer2 = image;
+      }
+      if (app.vis.select.getValue() === 'BSI ((B11+B4)-(B8+B2))/((B11+B4)+(B8+B2))') {
+        layer = s2bsi(image);
+        print(image)
+      } else {
+        layer2 = image;
+      }
+      
+      
+      // Add the image to the map with the corresponding visualization options.
+      var visOption = app.VIS_OPTIONS[app.vis.select.getValue()];
+      Map.addLayer(layer, visOption.visParams, imageId);
+     
+
+      //Map.addLayer(layer21, visOption.visParams, imageId);
+
+
+      /////////////// Create Panel ///////////////
+      // Create a panel to hold our widgets.
+      ///////////////////////////////////////////
+      
+      
     
     }
    
@@ -1416,7 +1493,7 @@ app.createHelpers = function() {
 function s2ndmi(image){
   var ndmi = image.normalizedDifference(['B8', 'B11']);
   return image.addBands(ndmi);
-}///////////here
+}
                  
 function s2ndvi(image){
   var ndvi = image.normalizedDifference(['B8', 'B4']);
@@ -1427,14 +1504,7 @@ function s2npcri(image){
   var npcri = image.normalizedDifference(['B4', 'B2']);
   return image.addBands(npcri);
 }
-function s2avi(image){
-  var avi = image.expression(
-    '(B8 * ((1 - B4) / (B8 - B4)))^(1/3)', {
-      'B8': image.select('B8'),
-      'B4': image.select('B4')
-  });
-  return image.addBands(avi);
-}
+
 function s2ndwi(image){
   var ndwi = image.normalizedDifference(['B3', 'B8']);
  
@@ -1498,9 +1568,13 @@ app.createConstants = function() {
   
 
   app.VIS_OPTIONS = {
-   
-    
-    'NDVI (B8-B4/B8+B4)': {
+    'RGB (B4,B3,B2)': {
+      description:'Red, Green and Blue composition' +
+                  '',
+      visParams:{min:0, max:0.3,bands: ['B4', 'B3', 'B2']}
+      
+    },
+   'NDVI (B8-B4/B8+B4)': {
       description: 'Normalized Differenced Vegetation index ' +
                    '',
       visParams:  {min: 0, max: 0.7,  palette:palette, bands: ['nd']}
@@ -1527,11 +1601,7 @@ app.createConstants = function() {
                    '',
       visParams:  {min: -0.6, max: 1,  palette:nbrViz, bands: ['B11_1']}//
     },
-    'AVI (B8*((1-B4)*(B8-B4)))^(1/3)': {
-      description: 'Advanced Vegetation Index  ' +
-                   '',
-      visParams:  {min: -0.6, max: 1,  palette:nbrViz, bands: ['nd']}//
-    },
+    
     
     
   };
@@ -1547,8 +1617,10 @@ app.boot = function() {
     widgets: [
       app.intro.panel,
       app.filters.panel,
+      app.btn_plot.panel,
       app.picker.panel,
       app.vis.panel,
+      //app.btn_plot,
       app.btn_CART.panel,
       app.btn_RF.panel,
     ],
@@ -1561,6 +1633,7 @@ app.boot = function() {
   Map.setCenter(-25.24124, 37.74997, 13);  
   
   app.applyFilters();
+  //app.applyPlot();
 
 
 };
