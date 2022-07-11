@@ -1,5 +1,6 @@
 # ForestAZ
-ForestAZ, ForestAz - Using Google Earth Engine and Copernicus Sentinel data for forest mapping, assessment and monitoring in small oceanic islands – the case-study of S. Miguel Island.
+
+ForestAz - Using Google Earth Engine and Sentinel data for forest monitoring in the Azores Islands (Portugal)
 
 ## Introduction
 ForestAZ is an open tool conceived to help public stakeholders from Sao Miguel island in Azores. The tool provides useful information such time-series analysis of main vegetation indexes values throughout the time, up-to-date forest invetory classification, Above Ground Carbon (AGC) estimation per specie within the offical forest perimeter of Sao Miguel island. In addition it maps the main vegetation indexes in all the island. 
