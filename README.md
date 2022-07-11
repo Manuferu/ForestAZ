@@ -43,5 +43,8 @@ To make it run in your side, you will need to create a [Google Earth Engine acco
 - Mullissa, A.; Vollrath, A.; Odongo-Braun, C.; Slagter, B.; Balling, J.; Gou, Y.; Gorelick, N.; Reiche, J. Sentinel-1 SAR Backscatter Analysis Ready Data Preparation in Google Earth Engine. Remote Sens. 2021, 13, 1954. https://doi.org/10.3390/rs13101954
 - Principe, Rodrigo E. 2022. cloud masks. https://github.com/fitoprincipe/geetools-code-editor/blob/master/cloud_masks (2022)
 
+# Citation
+
+- Fernández-Urrutia, M; Gil, A (2022). Resource communication: ForestAz - Using Google Earth Engine and Sentinel  data for forest monitoring in the Azores Islands (Portugal). Forest Systems, Volume 31, Issue 2, eRC01. https://doi.org/10.5424/fs/2022312-18929
 
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
